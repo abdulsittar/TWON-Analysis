@@ -1,4 +1,35 @@
 
+function PreSurveyComparison(){
+	$.ajax({
+		url: "/sensoranalysis/presurveysubmissiontime",
+		type: "GET",
+		contentType: 'application/json;charset=UTF-8',
+		data: {
+			'barrier': ""
+		},
+		dataType: "json",
+		success: function (data) {
+			Plotly.newPlot('seventhGraph', data)
+		}
+	});
+};
+
+function PostSurveyComparison(){
+	$.ajax({
+		url: "/sensoranalysis/postsurveysubmissiontime",
+		type: "GET",
+		contentType: 'application/json;charset=UTF-8',
+		data: {
+			'barrier': ""
+		},
+		dataType: "json",
+		success: function (data) {
+			Plotly.newPlot('eightGraph', data)
+		}
+	});
+};
+
+
 function UsersComparison(){
 	$.ajax({
 		url: "/sensoranalysis/usercomparison",

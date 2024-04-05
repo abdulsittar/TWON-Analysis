@@ -255,9 +255,9 @@ def viewershipsOfPosts():
     
     df_merged = pd.merge(users,readposts , on ='userId', how ="left")
     totalViewership = df_merged.groupby(['username', "userId", "postId"]).count().reset_index()
-    totalViewership = totalViewership.rename(columns={"username":"Username", "email":"Total posts viewed"})
+    totalViewership = totalViewership.rename(columns={"username":"Username", "email":"Total posts read"})
     
-    fig = px.bar(totalViewership, x="Username",y="Total posts viewed", title='<b>Total posts viewed by each user</b>')
+    fig = px.bar(totalViewership, x="Username",y="Total posts read", title='<b>Total posts read by each user</b>')
     fig.update_xaxes(tickangle=-45)
     fig.update_layout(font=dict(family="Helvetica", size=18, color="black"))
     
@@ -348,6 +348,33 @@ def postreadovertime():
     graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
     return graphJSON
 
+@blueprint.route('/presurveysubmissiontime', methods=['GET', 'POST'])
+def presurveysubmissiontime():
+    usersData = pd.DataFrame(list(db.users.find()))
+    presurData = pd.DataFrame(list(db.presurveys.find()))
+    usersData['uniqueId'] = usersData['uniqueId'].astype(str)
+    presurData['uniqueId'] = presurData['uniqueId'].astype(str)
+    usersData = usersData[["_id", "username", "uniqueId"]].reset_index(drop=True)
+    presurData = presurData[["uniqueId", "createdAt"]].reset_index(drop=True)
+    df_merged = pd.merge(presurData, usersData, on ='uniqueId', how ="left")
+    df_merged = df_merged.rename(columns={"createdAt":"time"})
+    fig = px.bar(df_merged, x="username",y="time", title='Users who submitted the pre-survey?')
+    graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+    return graphJSON
+
+@blueprint.route('/postsurveysubmissiontime', methods=['GET', 'POST'])
+def postsurveysubmissiontime():
+    usersData = pd.DataFrame(list(db.users.find()))
+    presurData = pd.DataFrame(list(db.postsurveys.find()))
+    usersData['uniqueId'] = usersData['uniqueId'].astype(str)
+    presurData['uniqueId'] = presurData['uniqueId'].astype(str)
+    usersData = usersData[["_id", "username", "uniqueId"]].reset_index(drop=True)
+    presurData = presurData[["uniqueId", "createdAt"]].reset_index(drop=True)
+    df_merged = pd.merge(presurData, usersData, on ='uniqueId', how ="left")
+    df_merged = df_merged.rename(columns={"createdAt":"time"})
+    fig = px.bar(df_merged, x="username",y="time", title='Users who submitted the post-survey?')
+    graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+    return graphJSON
 
 
     
