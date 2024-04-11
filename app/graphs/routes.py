@@ -203,6 +203,22 @@ def postsovertime():
     graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
     return graphJSON
 
+@blueprint.route('/userssovertime', methods=['GET', 'POST'])
+def userssovertime():
+    postsData = pd.DataFrame(list(db.users.find()))
+    postsData['createdAt'] = postsData['createdAt'].astype('datetime64[ns]')
+    postsData['MD'] = postsData['createdAt'].dt.strftime('%Y-%m-%d')
+    
+    dfg = postsData.groupby('MD').count().reset_index()
+    dfg = dfg.rename(columns={"MD": "Time", "desc": "Total Users"})
+
+    #dfg = dfg.rename(columns={"isAdmin": "User is Admin?", "username": "Total Users"})
+    fig = px.bar(dfg, x='Time',y='Total Users',title='<b>Volume of users (daily) over time</b>')
+    fig.update_layout(font=dict(family="Helvetica", size=18, color="black"))
+    
+    graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+    return graphJSON
+
 @blueprint.route('/postsbyUsers', methods=['GET', 'POST'])
 def postsbyUsers():
     postsData = pd.DataFrame(list(db.posts.find()))
@@ -320,6 +336,7 @@ def postDetailActivity():
     return graphJSON
 
 
+
 @blueprint.route('/postviewovertime', methods=['GET', 'POST'])
 def postviewovertime():
     postsData = pd.DataFrame(list(db.posts.find()))
@@ -366,15 +383,279 @@ def presurveysubmissiontime():
 def postsurveysubmissiontime():
     usersData = pd.DataFrame(list(db.users.find()))
     presurData = pd.DataFrame(list(db.postsurveys.find()))
-    usersData['uniqueId'] = usersData['uniqueId'].astype(str)
-    presurData['uniqueId'] = presurData['uniqueId'].astype(str)
+    usersData['_id'] = usersData['_id'].astype(str)
+    presurData['userId'] = presurData['userId'].astype(str)
     usersData = usersData[["_id", "username", "uniqueId"]].reset_index(drop=True)
-    presurData = presurData[["uniqueId", "createdAt"]].reset_index(drop=True)
-    df_merged = pd.merge(presurData, usersData, on ='uniqueId', how ="left")
+    usersData = usersData.rename(columns={"_id":"userId"})
+    presurData = presurData[["userId", "createdAt"]].reset_index(drop=True)
+    df_merged = pd.merge(presurData, usersData, on ='userId', how ="left")
+    
     df_merged = df_merged.rename(columns={"createdAt":"time"})
     fig = px.bar(df_merged, x="username",y="time", title='Users who submitted the post-survey?')
     graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
     return graphJSON
+
+@blueprint.route('/totalRankedPosts', methods=['GET', 'POST'])
+def totalRankedPosts():
+    ppl_flower = pd.DataFrame(list(db.posts.find()))
+    ppl_flower['userId'] = ppl_flower['userId'].astype(str)
+    usersData = pd.DataFrame(list(db.users.find()))
+    usersData['_id'] = usersData['_id'].astype(str)
+    usersData = usersData.rename(columns={"_id":"userId"})
+
+    df_merged = pd.merge(ppl_flower, usersData, on ='userId', how ="left")
+    df_sorted = df_merged.sort_values(by='updatedAt_x', ascending=False)
+    df_sorted['MD'] = df_sorted['updatedAt_x'].dt.strftime('%Y-%m-%dT%H:%M')
+    df_sorted = df_sorted.rename(columns={"MD":"Time"})
+
+    df_sorted = df_sorted.head(10)
+    fig = px.bar(df_sorted, x='Time', y='rank', color='username', title='Ten latest ranked posts')
+    graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+    return graphJSON
+    
+    
+
+
+@blueprint.route('/BotsTotalRepliesRoute', methods=['GET', 'POST'])
+def BotsTotalRepliesRoute():
+    purple_flower = db.users.find({'username': 'Purple Flower'})
+    blue_seal = db.users.find({'username': 'Blue Seal'})
+    white_hare = db.users.find({'username': 'White Hare'})
+    green_rabbit = db.users.find({'username': 'Green Rabbit'})
+    white_walrus = db.users.find({'username': 'White Walrus'})
+    purple_walrus = db.users.find({'username': 'Purple Walrus'})
+    
+    purple_flower_latest = pd.DataFrame()
+    blue_seal_latest = pd.DataFrame()
+    white_hare_latest = pd.DataFrame()
+    green_rabbit_latest = pd.DataFrame()
+    white_walrus_latest = pd.DataFrame()
+    purple_walrus_latest = pd.DataFrame()
+    
+    try:
+        ppl_flower = pd.DataFrame(list(db.comments.find({"userId":purple_flower[0]["_id"]})))
+        df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
+        purple_flower_latest = df_sorted.head(5)
+    except Exception as e:
+        print("An error occurred:", e)
+    
+    try:
+        ppl_flower = pd.DataFrame(list(db.comments.find({"userId":blue_seal[0]["_id"]})))
+        df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
+        blue_seal_latest = df_sorted.head(5)
+    except Exception as e:
+        print("An error occurred:", e)
+
+    try:
+        ppl_flower = pd.DataFrame(list(db.comments.find({"userId":white_hare[0]["_id"]})))
+        df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
+        white_hare_latest = df_sorted.head(5)
+    except Exception as e:
+        print("An error occurred:", e)
+
+    try:
+        ppl_flower = pd.DataFrame(list(db.comments.find({"userId":green_rabbit[0]["_id"]})))
+        df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
+        green_rabbit_latest = df_sorted.head(5)
+    except Exception as e:
+        print("An error occurred:", e)
+
+    try:
+        ppl_flower = pd.DataFrame(list(db.comments.find({"userId":white_walrus[0]["_id"]})))
+        df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
+        white_walrus_latest = df_sorted.head(5)
+    except Exception as e:
+        print("An error occurred:", e)
+
+    try:
+        ppl_flower = pd.DataFrame(list(db.comments.find({"userId":purple_walrus[0]["_id"]})))
+        df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
+        purple_walrus_latest = df_sorted.head(5)
+    except Exception as e:
+        print("An error occurred:", e)
+    
+    dfs = [purple_flower_latest, blue_seal_latest, white_hare_latest, green_rabbit_latest, white_walrus_latest, purple_walrus_latest]
+    dfs_defined = [df for df in dfs if df is not None] 
+
+    if dfs_defined:
+        concatenated_df = pd.concat(dfs_defined)
+        concatenated_df.reset_index(drop=True, inplace=True)
+        concatenated_df['index'] = concatenated_df.reset_index().index + 1
+        concatenated_df = concatenated_df.sort_values(by='updatedAt', ascending=False)
+        
+        latest_updates = concatenated_df.groupby('username').tail(5)
+        latest_updates['MD'] = latest_updates['updatedAt'].dt.strftime('%Y-%m-%dT%H:%M')
+        latest_updates = latest_updates.rename(columns={"MD":"Time"})
+        latest_updates = latest_updates.head(5)
+        fig = px.bar(latest_updates, x='Time', y='index', color='username', barmode='group', title='Last five comments on posts by the bots')
+        graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+        return graphJSON
+
+
+@blueprint.route('/BotsTotalLikedComentsRoute', methods=['GET', 'POST'])
+def BotsTotalLikedComentsRoute():
+    purple_flower = db.users.find({'username': 'Purple Flower'})
+    blue_seal = db.users.find({'username': 'Blue Seal'})
+    white_hare = db.users.find({'username': 'White Hare'})
+    green_rabbit = db.users.find({'username': 'Green Rabbit'})
+    white_walrus = db.users.find({'username': 'White Walrus'})
+    purple_walrus = db.users.find({'username': 'Purple Walrus'})
+    
+    purple_flower_latest = pd.DataFrame()
+    blue_seal_latest = pd.DataFrame()
+    white_hare_latest = pd.DataFrame()
+    green_rabbit_latest = pd.DataFrame()
+    white_walrus_latest = pd.DataFrame()
+    purple_walrus_latest = pd.DataFrame()
+    
+    try:
+        ppl_flower = pd.DataFrame(list(db.commentlikes.find({"userId":purple_flower[0]["_id"]})))
+        ppl_flower["username"] = "purple_flower"
+        df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
+        purple_flower_latest = df_sorted.head(5)
+    except Exception as e:
+        print("An error occurred:", e)
+    
+    try:
+        ppl_flower = pd.DataFrame(list(db.commentlikes.find({"userId":blue_seal[0]["_id"]})))
+        ppl_flower["username"] = "blue_seal"
+        df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
+        blue_seal_latest = df_sorted.head(5)
+    except Exception as e:
+        print("An error occurred:", e)
+
+    try:
+        ppl_flower = pd.DataFrame(list(db.commentlikes.find({"userId":white_hare[0]["_id"]})))
+        ppl_flower["username"] = "white_hare"
+        df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
+        white_hare_latest = df_sorted.head(5)
+    except Exception as e:
+        print("An error occurred:", e)
+
+    try:
+        ppl_flower = pd.DataFrame(list(db.commentlikes.find({"userId":green_rabbit[0]["_id"]})))
+        ppl_flower["username"] = "green_rabbit"
+        df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
+        green_rabbit_latest = df_sorted.head(5)
+    except Exception as e:
+        print("An error occurred:", e)
+
+    try:
+        ppl_flower = pd.DataFrame(list(db.commentlikes.find({"userId":white_walrus[0]["_id"]})))
+        ppl_flower["username"] = "white_walrus"
+        df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
+        white_walrus_latest = df_sorted.head(5)
+    except Exception as e:
+        print("An error occurred:", e)
+
+    try:
+        ppl_flower = pd.DataFrame(list(db.commentlikes.find({"userId":purple_walrus[0]["_id"]})))
+        ppl_flower["username"] = "purple_walrus"
+        df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
+        purple_walrus_latest = df_sorted.head(5)
+    except Exception as e:
+        print("An error occurred:", e)
+    
+    dfs = [purple_flower_latest, blue_seal_latest, white_hare_latest, green_rabbit_latest, white_walrus_latest, purple_walrus_latest]
+    dfs_defined = [df for df in dfs if df is not None] 
+
+    if dfs_defined:
+        concatenated_df = pd.concat(dfs_defined)
+        concatenated_df.reset_index(drop=True, inplace=True)
+        concatenated_df['index'] = concatenated_df.reset_index().index + 1
+        concatenated_df = concatenated_df.sort_values(by='updatedAt', ascending=False)
+        
+        latest_updates = concatenated_df.groupby('username').tail(5)
+        latest_updates['MD'] = latest_updates['updatedAt'].dt.strftime('%Y-%m-%dT%H:%M')
+        latest_updates = latest_updates.rename(columns={"MD":"Time"})
+        latest_updates = latest_updates.head(5)
+        fig = px.bar(latest_updates, x='Time', y='index', color='username', barmode='group', title='Last five likes on comments by the bots')
+        graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+        return graphJSON
+    
+
+
+@blueprint.route('/BotsTotalLikedPostsRoute', methods=['GET', 'POST'])
+def BotsTotalLikedPostsRoute():
+    purple_flower = db.users.find({'username': 'Purple Flower'})
+    blue_seal = db.users.find({'username': 'Blue Seal'})
+    white_hare = db.users.find({'username': 'White Hare'})
+    green_rabbit = db.users.find({'username': 'Green Rabbit'})
+    white_walrus = db.users.find({'username': 'White Walrus'})
+    purple_walrus = db.users.find({'username': 'Purple Walrus'})
+    
+    purple_flower_latest = pd.DataFrame()
+    blue_seal_latest = pd.DataFrame()
+    white_hare_latest = pd.DataFrame()
+    green_rabbit_latest = pd.DataFrame()
+    white_walrus_latest = pd.DataFrame()
+    purple_walrus_latest = pd.DataFrame()
+    
+    try:
+        ppl_flower = pd.DataFrame(list(db.postlikes.find({"userId":purple_flower[0]["_id"]})))
+        ppl_flower["username"] = "purple_flower"
+        df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
+        purple_flower_latest = df_sorted.head(5)
+    except Exception as e:
+        print("An error occurred:", e)
+    
+    try:
+        ppl_flower = pd.DataFrame(list(db.postlikes.find({"userId":blue_seal[0]["_id"]})))
+        ppl_flower["username"] = "blue_seal"
+        df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
+        blue_seal_latest = df_sorted.head(5)
+    except Exception as e:
+        print("An error occurred:", e)
+
+    try:
+        ppl_flower = pd.DataFrame(list(db.postlikes.find({"userId":white_hare[0]["_id"]})))
+        ppl_flower["username"] = "white_hare"
+        df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
+        white_hare_latest = df_sorted.head(5)
+    except Exception as e:
+        print("An error occurred:", e)
+
+    try:
+        ppl_flower = pd.DataFrame(list(db.postlikes.find({"userId":green_rabbit[0]["_id"]})))
+        ppl_flower["username"] = "green_rabbit"
+        df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
+        green_rabbit_latest = df_sorted.head(5)
+    except Exception as e:
+        print("An error occurred:", e)
+
+    try:
+        ppl_flower = pd.DataFrame(list(db.postlikes.find({"userId":white_walrus[0]["_id"]})))
+        ppl_flower["username"] = "white_walrus"
+        df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
+        white_walrus_latest = df_sorted.head(5)
+    except Exception as e:
+        print("An error occurred:", e)
+
+    try:
+        ppl_flower = pd.DataFrame(list(db.postlikes.find({"userId":purple_walrus[0]["_id"]})))
+        ppl_flower["username"] = "purple_walrus"
+        df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
+        purple_walrus_latest = df_sorted.head(5)
+    except Exception as e:
+        print("An error occurred:", e)
+    
+    dfs = [purple_flower_latest, blue_seal_latest, white_hare_latest, green_rabbit_latest, white_walrus_latest, purple_walrus_latest]
+    dfs_defined = [df for df in dfs if df is not None] 
+
+    if dfs_defined:
+        concatenated_df = pd.concat(dfs_defined)
+        concatenated_df.reset_index(drop=True, inplace=True)
+        concatenated_df['index'] = concatenated_df.reset_index().index + 1
+        concatenated_df = concatenated_df.sort_values(by='updatedAt', ascending=False)
+        
+        latest_updates = concatenated_df.groupby('username').tail(5)
+        latest_updates['MD'] = latest_updates['updatedAt'].dt.strftime('%Y-%m-%dT%H:%M')
+        latest_updates = latest_updates.rename(columns={"MD":"Time"})
+        latest_updates = latest_updates.head(5)
+        fig = px.bar(latest_updates, x='Time', y='index', color='username', barmode='group', title='Last five likes on posts by the bots')
+        graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+        return graphJSON
+    
 
 
     

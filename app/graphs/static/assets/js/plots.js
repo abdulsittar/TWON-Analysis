@@ -1,3 +1,45 @@
+function BotsTotalLikedPosts(){
+	$.ajax({
+		url: "/sensoranalysis/BotsTotalLikedPostsRoute",
+		type: "GET",
+		contentType: 'application/json;charset=UTF-8',
+		data: {
+			'barrier': ""
+		},
+		dataType: "json",
+		success: function (data) {
+			Plotly.newPlot('nineGraph', data)
+		}
+	});
+};
+function BotsTotalLikedComents(){
+	$.ajax({
+		url: "/sensoranalysis/BotsTotalLikedComentsRoute",
+		type: "GET",
+		contentType: 'application/json;charset=UTF-8',
+		data: {
+			'barrier': ""
+		},
+		dataType: "json",
+		success: function (data) {
+			Plotly.newPlot('tenGraph', data)
+		}
+	});
+};
+function BotsTotalReplies(){
+	$.ajax({
+		url: "/sensoranalysis/BotsTotalRepliesRoute",
+		type: "GET",
+		contentType: 'application/json;charset=UTF-8',
+		data: {
+			'barrier': ""
+		},
+		dataType: "json",
+		success: function (data) {
+			Plotly.newPlot('elevenGraph', data)
+		}
+	});
+};
 
 function PreSurveyComparison(){
 	$.ajax({
@@ -60,6 +102,22 @@ function postsbyUsers(){
 	});
 };
 
+
+function totalRankedPosts(){
+	$.ajax({
+		url: "/sensoranalysis/totalRankedPosts",
+		type: "GET",
+		contentType: 'application/json;charset=UTF-8',
+		data: {
+			'barrier': ""
+		},
+		dataType: "json",
+		success: function (data) {
+			Plotly.newPlot('fourteenGraph', data)
+		}
+	});
+};
+
 function viewershipsOfPosts(){
 	$.ajax({
 		url: "/sensoranalysis/viewershipsOfPosts",
@@ -75,6 +133,21 @@ function viewershipsOfPosts(){
 	});
 };
 
+
+function userssovertime(){
+	$.ajax({
+		url: "/sensoranalysis/userssovertime",
+		type: "GET",
+		contentType: 'application/json;charset=UTF-8',
+		data: {
+			'barrier': ""
+		},
+		dataType: "json",
+		success: function (data) {
+			Plotly.newPlot('ThirteenGraph', data)
+		}
+	});
+};
 function postsovertime(){
 	$.ajax({
 		url: "/sensoranalysis/postsovertime",
