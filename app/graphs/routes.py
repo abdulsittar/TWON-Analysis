@@ -122,7 +122,7 @@ KEY = "EVENTR_KEY"
 er = EventRegistry(apiKey=KEY)
 
 
-@blueprint.route('/index.html')
+@blueprint.route('/users.html')
 @blueprint.route('/<path>')
 def index(path):
     content = None
@@ -170,9 +170,29 @@ def forensic():
 
 
 @blueprint.route('/')
-def dashboard():
+def users():
     #print("ad dashboard")
-    return render_template('layouts/default.html', content=render_template('pages/index.html'))
+    return render_template('layouts/default.html', content=render_template('pages/users.html'))
+
+@blueprint.route('/posts')
+def posts():
+    #print("ad dashboard")
+    return render_template('layouts/default.html', content=render_template('pages/posts.html'))
+
+@blueprint.route('/surveys')
+def surveys():
+    #print("ad dashboard")
+    return render_template('layouts/default.html', content=render_template('pages/surveys.html'))
+
+@blueprint.route('/ranker')
+def ranker():
+    #print("ad dashboard")
+    return render_template('layouts/default.html', content=render_template('pages/ranker.html'))
+
+@blueprint.route('/bots')
+def bots():
+    #print("ad dashboard")
+    return render_template('layouts/default.html', content=render_template('pages/bots.html'))
 
 
 
