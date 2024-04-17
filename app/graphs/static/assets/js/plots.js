@@ -41,6 +41,21 @@ function BotsTotalReplies(){
 	});
 };
 
+function BotsTotalPosts(){
+	$.ajax({
+		url: "/sensoranalysis/BotsTotalPostsRoute",
+		type: "GET",
+		contentType: 'application/json;charset=UTF-8',
+		data: {
+			'barrier': ""
+		},
+		dataType: "json",
+		success: function (data) {
+			Plotly.newPlot('postsGraph', data)
+		}
+	});
+};
+
 function PreSurveyComparison(){
 	$.ajax({
 		url: "/sensoranalysis/presurveysubmissiontime",
