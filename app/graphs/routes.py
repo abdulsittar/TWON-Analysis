@@ -4,6 +4,8 @@ License: MIT
 Copyright (c) 2019 - present AppSeed.us
 """
 
+from app.graphs.myconstants import *
+
 # Python modules
 import math
 from . import blueprint
@@ -15,23 +17,34 @@ from functools import partial
 from bson import ObjectId
 import json
 import time
-from scipy.spatial.distance import pdist
-pw_jaccard_func = partial(pdist, metric='jaccard')
-import scipy.cluster.hierarchy as sch
+#from scipy.spatial.distance import pdist
+#pw_jaccard_func = partial(pdist, metric='jaccard')
+#import scipy.cluster.hierarchy as sch
 import random
-from wordcloud import WordCloud, STOPWORDS
+#from wordcloud import WordCloud, STOPWORDS
 from pytimeparse.timeparse import timeparse
-import matplotlib.pyplot as plt
-import pyLDAvis.gensim
+#import matplotlib.pyplot as plt
+#import pyLDAvis.gensim
 import nltk
 from nltk.corpus import stopwords
-import plotly.express as px
+
 nltk.download('stopwords')
 nltk.download('wordnet')
 from nltk.tokenize import RegexpTokenizer
 from gensim import corpora, models
 import gensim
+
 from plotly.subplots import make_subplots
+import plotly.graph_objs as go
+from plotly import exceptions, optional_imports
+from plotly.graph_objs import graph_objs
+import plotly.express as px
+import plotly.figure_factory as ff
+from plotly.graph_objs import *
+import plotly
+from plotly.offline import download_plotlyjs, init_notebook_mode, plot, iplot
+#from chart_studio import plotly as py
+
 import os
 from os import path
 from time import sleep
@@ -39,14 +52,14 @@ from matplotlib.figure import Figure
 from dash_holoniq_wordcloud import DashWordcloud
 from dash import Dash, dcc, html
 from bs4 import BeautifulSoup
-import plotly.graph_objs as go
+
+
 import csv
 from collections import defaultdict
 import string
 stop_words = set(stopwords.words("english"))
 from collections import OrderedDict
-from plotly import exceptions, optional_imports
-from plotly.graph_objs import graph_objs
+
 from distinctipy import distinctipy
 np = optional_imports.get_module("numpy")
 scp = optional_imports.get_module("scipy")
@@ -54,7 +67,7 @@ sch = optional_imports.get_module("scipy.cluster.hierarchy")
 scs = optional_imports.get_module("scipy.spatial")
 import numpy as np
 np.random.seed(1)
-import plotly
+
 import pandas as pd
 import pickle
 import seaborn as sns 
@@ -65,7 +78,7 @@ import pandas as pd
 import sklearn
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
-import plotly.figure_factory as ff
+
 from scipy.cluster import hierarchy
 from scipy.cluster.hierarchy import dendrogram, linkage, cut_tree
 from collections import namedtuple
@@ -76,17 +89,18 @@ from datetime import timezone
 import datetime
 import networkx as nx
 from scipy.spatial.distance import jaccard, squareform
-from bertopic import BERTopic
-from plotly.graph_objs import *
+#from bertopic import BERTopic
+
 global threshold
 global glo_dataframes
 from eventregistry import *
-from chart_studio import plotly as py
-import plotly.graph_objs as go
-import plotly
-from plotly.offline import download_plotlyjs, init_notebook_mode, plot, iplot
+
+
 from dotenv import load_dotenv
 load_dotenv()
+from dateutil import tz
+import pytz
+eastern = pytz.timezone('Europe/Berlin')
 
 threshold = 0.2
 dendro_clusters = 0
@@ -98,25 +112,6 @@ total_clusters = 0
 clustered_dataframes = pd.DataFrame()
 client = pymongo.MongoClient(os.getenv("DB_URL"))
 db = client.test
-
-
-
-colors = ["blue",  "black",  "brown", "gray", "green", "orange", "purple", "red", "white", "yellow", "bisque",
-                "burlywood", "chartreuse", "chocolate", "coral", "cornsilk", "crimson", "darkblue", "darkcyan", "darkgoldenrod", "darkgray", 
-                "darkgreen", "darkkhaki", "darkmagenta", "darkolivegreen", "darkorange", "darkorchid", "darkred", "darksalmon", "darkseagreen",
-                "darkslateblue", "darkslategray", "darkslategrey", "darkturquoise", "darkviolet", "deeppink", "deepskyblue",
-                "dimgray", "dodgerblue", "firebrick", "floralwhite", "forestgreen", "fuchsia", "gainsboro",
-                "ghostwhite", "gold", "goldenrod",  "greenyellow", "honeydew", "hotpink", "indianred",
-                "indigo", "ivory", "khaki", "lavender", "lavenderblush", "lawngreen", "lemonchiffon", "lightblue", "lightcoral", 
-                "lightcyan", "lightgoldenrodyellow", "lightgray", "lightgreen", "lightpink", "lightsalmon", 
-                "lightseagreen", "lightskyblue", "lightslategray", "lightsteelblue", "lightyellow", "lime",
-                "limegreen", "linen", "magenta", "maroon", "mediumaquamarine", "mediumblue", "mediumorchid", "mediumpurple",
-                "mediumseagreen", "mediumslateblue", "mediumspringgreen", "mediumturquoise", "mediumvioletred", "midnightblue",
-                "mintcream", "mistyrose", "moccasin", "navajowhite", "navy", "oldlace", "olive", "olivedrab", 
-                "orangered", "orchid", "palegoldenrod", "palegreen", "paleturquoise", "palevioletred", "papayawhip", "peachpuff",
-                "peru", "pink", "plum", "powderblue",  "rosybrown", "royalblue", "rebeccapurple", "saddlebrown",
-                "salmon", "sandybrown", "seagreen", "seashell", "sienna", "silver", "skyblue", "slateblue", "slategray",
-                "slategrey", "snow", "springgreen", "steelblue", "tan", "teal", "thistle", "violet"] 
 
 
 KEY = "EVENTR_KEY"
@@ -211,7 +206,15 @@ def usercomparison():
 @blueprint.route('/postsovertime', methods=['GET', 'POST'])
 def postsovertime():
     postsData = pd.DataFrame(list(db.posts.find()))
-    postsData['createdAt'] = postsData['createdAt'].astype('datetime64[ns]')
+    postsData['createdAt'] = pd.to_datetime(postsData['createdAt'])
+    postsData['createdAt'] = postsData['createdAt'].dt.tz_localize(None)
+    start_date = pd.to_datetime('2024-04-22')
+    end_date = pd.to_datetime('2024-04-26')
+    postsData = postsData[(postsData['createdAt'] >= start_date) & (postsData['createdAt'] <= end_date)]
+
+    postsData.set_index('createdAt', inplace=True)
+    postsData.index = postsData.index.tz_localize(pytz.utc).tz_convert(eastern)
+    postsData.reset_index(inplace=True)
     postsData['MD'] = postsData['createdAt'].dt.strftime('%Y-%m-%d')
     
     dfg = postsData.groupby('MD').count().reset_index()
@@ -224,9 +227,131 @@ def postsovertime():
     graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
     return graphJSON
 
+@blueprint.route('/CaseStudyDoneRoute', methods=['GET', 'POST'])
+def CaseStudyDoneRoute():
+    activities = pd.DataFrame(list(db.timemes.find()))
+    activities = activities.dropna(how='any',axis=0)
+    users = pd.DataFrame(list(db.users.find()))
+    users = users.rename(columns={"_id": "userId"}) 
+    users = users.dropna(subset=['username'], axis=0) 
+    
+    df_merged = activities.merge(users, on='userId', how = 'right').reset_index()
+    df_merged = df_merged[["seconds", "userId","username", "createdAt_x", "page"]]
+    df_merged = df_merged[df_merged["page"] == "Home"]
+    df_merged = df_merged.sort_values(by='createdAt_x')
+    df_merged['createdAt_x'] = pd.to_datetime(df_merged['createdAt_x'])
+    start_date = pd.to_datetime('2024-04-22')
+    end_date = pd.to_datetime('2024-04-26')
+    filtered_df = df_merged[(df_merged['createdAt_x'] >= start_date) & (df_merged['createdAt_x'] <= end_date)]
+    filtered_df['seconds'] = filtered_df['seconds'].astype(float).astype(int)
+    filtered_df = filtered_df.sort_values(by=['username'])
+    filtered2 = filtered_df[filtered_df['seconds'] == filtered_df.groupby('username')['seconds'].shift(-1)]
+
+
+    df_merged2 = activities.merge(users, on='userId', how = 'right').reset_index()
+    df_merged2 = df_merged2[["seconds", "userId","username", "createdAt_x", "page"]]
+    df_merged2 = df_merged2[df_merged2["page"] == "DetailPage"]
+    df_merged2 = df_merged2.sort_values(by='createdAt_x')
+    df_merged2['createdAt_x'] = pd.to_datetime(df_merged2['createdAt_x'])
+    filtered_df2 = df_merged2[(df_merged2['createdAt_x'] >= start_date) & (df_merged2['createdAt_x'] <= end_date)]
+    filtered_df2['seconds'] = filtered_df2['seconds'].astype(float).astype(int)
+    filtered_df2 = filtered_df2.sort_values(by=['username'])
+    filtered3 = filtered_df2[filtered_df2['seconds'] == filtered_df2.groupby('username')['seconds'].shift(-1)]
+    
+    
+    filtered_df = pd.concat([filtered2, filtered3], ignore_index=True)
+    filtered_df['createdAt_x'] = filtered_df['createdAt_x'].dt.strftime('%Y-%m-%d')
+
+    #filtered_df['createdAt_x2'] = filtered_df.index.strftime('%Y-%m-%d %H:%M:%S')
+    result = filtered_df.groupby(['username', 'createdAt_x']).agg({'seconds': 'sum'}).reset_index()
+    result['seconds'] = result['seconds'] / 60
+    result = result.rename(columns={"createdAt_x": "Days","seconds": "Minutes"})
+    user_scores = result.groupby('username')['Minutes'].agg(['count', 'min'])
+    filtered_users = user_scores[(user_scores['count'] == 3) & (user_scores['min'] >= 5)]
+    filtered_users = filtered_users.reset_index()
+    fig = px.bar(filtered_users, x="username",y="min", title='<b>Users who spent at least 8 minutes for three days</b>')
+    fig.update_xaxes(tickangle=-45)
+    fig.update_layout(font=dict(family="Helvetica", size=18, color="black"))
+    graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+    return graphJSON
+
+
+
+@blueprint.route('/TotalTimeCaseStudyRoute', methods=['GET', 'POST'])
+def TotalTimeCaseStudyRoute():
+    activities = pd.DataFrame(list(db.timemes.find()))
+    activities = activities.dropna(how='any',axis=0)
+    users = pd.DataFrame(list(db.users.find()))
+    users = users.rename(columns={"_id": "userId"}) 
+    users = users.dropna(subset=['username'], axis=0) 
+    
+    df_merged = activities.merge(users, on='userId', how = 'right').reset_index()
+    df_merged = df_merged[["seconds", "userId","username", "createdAt_x", "page"]]
+    df_merged = df_merged[df_merged["page"] == "Home"]
+    df_merged = df_merged.sort_values(by='createdAt_x')
+    df_merged['createdAt_x'] = pd.to_datetime(df_merged['createdAt_x'])
+    start_date = pd.to_datetime('2024-04-22')
+    end_date = pd.to_datetime('2024-04-26')
+    filtered_df = df_merged[(df_merged['createdAt_x'] >= start_date) & (df_merged['createdAt_x'] <= end_date)]
+    filtered_df['seconds'] = filtered_df['seconds'].astype(float).astype(int)
+    filtered_df = filtered_df.sort_values(by=['username'])
+    filtered2 = filtered_df[filtered_df['seconds'] == filtered_df.groupby('username')['seconds'].shift(-1)]
+
+
+    df_merged2 = activities.merge(users, on='userId', how = 'right').reset_index()
+    df_merged2 = df_merged2[["seconds", "userId","username", "createdAt_x", "page"]]
+    df_merged2 = df_merged2[df_merged2["page"] == "DetailPage"]
+    df_merged2 = df_merged2.sort_values(by='createdAt_x')
+    df_merged2['createdAt_x'] = pd.to_datetime(df_merged2['createdAt_x'])
+    filtered_df2 = df_merged2[(df_merged2['createdAt_x'] >= start_date) & (df_merged2['createdAt_x'] <= end_date)]
+    filtered_df2['seconds'] = filtered_df2['seconds'].astype(float).astype(int)
+    filtered_df2 = filtered_df2.sort_values(by=['username'])
+    filtered3 = filtered_df2[filtered_df2['seconds'] == filtered_df2.groupby('username')['seconds'].shift(-1)]
+    
+    
+    filtered_df = pd.concat([filtered2, filtered3], ignore_index=True)
+    
+    
+    
+    filtered_df['createdAt_x'] = filtered_df['createdAt_x'].dt.strftime('%Y-%m-%d')
+
+    result = filtered_df.groupby(['username', 'createdAt_x']).agg({'seconds': 'sum'}).reset_index()
+    result['seconds'] = result['seconds'] / 60
+    result = result.rename(columns={"createdAt_x": "Days"})#,"seconds": "Minutes"})
+
+    #filtered_df['createdAt_x2'] = filtered_df.index.strftime('%Y-%m-%d %H:%M:%S')
+    pivot_table = result.pivot_table(values='seconds', index='Days', columns='username', aggfunc='sum')
+    pivot_table = pivot_table.fillna(0)
+
+    # Create the heatmap using Plotly Express
+    fig = px.imshow(pivot_table, 
+                labels=dict(x="username", y="Days", color="seconds"),
+                x=pivot_table.columns,
+                y=pivot_table.index,
+                color_continuous_scale='Viridis')
+
+    fig.update_layout(title='Total minutes spent on each day by the users')
+    graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+    return graphJSON
+    
+    
+    result = filtered_df.groupby(['username', 'createdAt_x']).agg({'seconds': 'sum'}).reset_index()
+    result['seconds'] = result['seconds'] / 60
+    result = result.rename(columns={"createdAt_x": "Days","seconds": "Minutes"})
+    fig = px.bar(result, x='Days', y='Minutes', color='username', barmode='group',title='<b>Total minutes spent on each day by the users</b>')  
+    graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+    return graphJSON
+
+
 @blueprint.route('/userssovertime', methods=['GET', 'POST'])
 def userssovertime():
     postsData = pd.DataFrame(list(db.users.find()))
+    postsData['createdAt'] = pd.to_datetime(postsData['createdAt'])
+    postsData['createdAt'] = postsData['createdAt'].dt.tz_localize(None)
+    start_date = pd.to_datetime('2024-04-22')
+    end_date = pd.to_datetime('2024-04-26')
+    postsData = postsData[(postsData['createdAt'] >= start_date) & (postsData['createdAt'] <= end_date)]
+    
     postsData['createdAt'] = postsData['createdAt'].astype('datetime64[ns]')
     postsData['MD'] = postsData['createdAt'].dt.strftime('%Y-%m-%d')
     
@@ -243,6 +368,7 @@ def userssovertime():
 @blueprint.route('/postsbyUsers', methods=['GET', 'POST'])
 def postsbyUsers():
     postsData = pd.DataFrame(list(db.posts.find()))
+    print(postsData)
     postsData = postsData.rename(columns={"_id": "postId"}) 
     postsData = postsData.dropna(subset=['postId'], axis=0)
     postsData = postsData.dropna(subset=['userId'], axis=0)
@@ -275,6 +401,8 @@ def postsbyUsers():
 def viewershipsOfPosts():
     
     readposts = pd.DataFrame(list(db.readposts.find()))
+    if len(readposts) <1:
+        return ""
     readposts = readposts.dropna(subset=['userId'], axis=0)
     readposts = readposts[["postId", "userId"]].reset_index(drop=True)
     
@@ -317,13 +445,36 @@ def userActivityHome():
     
     df_merged = activities.merge(users, on='userId', how = 'left').reset_index()
     df_merged = df_merged[["seconds", "userId","username", "createdAt_x", "page"]] 
-    df_merged['seconds'] = df_merged['seconds'].astype(float).astype(int)
     
+    start_date = pd.to_datetime('2024-04-22')
+    end_date = pd.to_datetime('2024-04-26')
+    df_merged = df_merged[(df_merged['createdAt_x'] >= start_date) & (df_merged['createdAt_x'] <= end_date)]
+    
+    df_merged.set_index('createdAt_x', inplace=True)
+    df_merged.index = df_merged.index.tz_localize(pytz.utc).tz_convert(eastern)
+    df_merged.reset_index(inplace=True)
+    #df_merged['MD'] = df_merged.index.strftime('%Y-%m-%d %H:%M:%S')
+
+    df_merged['seconds'] = df_merged['seconds'].astype(float).astype(int)
     #df_merged['datetime'] = pd.to_datetime(df_merged['seconds'], unit='s')
     #df_merged['datetime_string'] = df_merged['datetime'].dt.strftime('%S')
     
-    df_merged['createdAt_x'] = df_merged['createdAt_x'].astype('datetime64[ns]')
+    #df_merged["MD"] = df_merged["MD"].astype('datetime64[ns]')
     df_merged = df_merged.rename(columns={"createdAt_x": "Time", "seconds": "Time Spent (seconds)"})
+    pivot_table = df_merged.pivot_table(values='Time Spent (seconds)', index='Time', columns='username', aggfunc='sum')
+    pivot_table = pivot_table.fillna(0)
+
+    # Create the heatmap using Plotly Express
+    fig = px.imshow(pivot_table, 
+                labels=dict(x="username", y="Time", color="Time Spent (seconds)"),
+                x=pivot_table.columns,
+                y=pivot_table.index,
+                color_continuous_scale='Viridis')
+
+    fig.update_layout(title='Time spent by each user on home screen')
+    graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+    return graphJSON
+    
     
     dfg = df_merged.groupby(['Time', 'Time Spent (seconds)', 'username']).count().reset_index()
     fig = px.line(dfg, x="Time", y="Time Spent (seconds)", color='username',title='<b>Time spent by each user on home screen</b>', line_shape='linear')
@@ -344,13 +495,37 @@ def postDetailActivity():
     
     df_merged = activities.merge(users, on='userId', how = 'left').reset_index()
     df_merged = df_merged[["seconds", "userId","username", "createdAt_x", "page"]] 
+    
+    start_date = pd.to_datetime('2024-04-22')
+    end_date = pd.to_datetime('2024-04-26')
+    df_merged = df_merged[(df_merged['createdAt_x'] >= start_date) & (df_merged['createdAt_x'] <= end_date)]
+    
+    df_merged.set_index('createdAt_x', inplace=True)
+    df_merged.index = df_merged.index.tz_localize(pytz.utc).tz_convert(eastern)
+    df_merged.reset_index(inplace=True)
+    
     df_merged['seconds'] = df_merged['seconds'].astype(float).astype(int)
     
     #df_merged['datetime'] = pd.to_datetime(df_merged['seconds'], unit='s')
     #df_merged['datetime_string'] = df_merged['datetime'].dt.strftime('%S')
     
-    df_merged['createdAt_x'] = df_merged['createdAt_x'].astype('datetime64[ns]')
+    #df_merged['createdAt_x'] = df_merged['createdAt_x'].astype('datetime64[ns]')
     df_merged = df_merged.rename(columns={"createdAt_x": "Time", "seconds": "Time Spent (seconds)"})
+    pivot_table = df_merged.pivot_table(values='Time Spent (seconds)', index='Time', columns='username', aggfunc='sum')
+    pivot_table = pivot_table.fillna(0)
+
+    # Create the heatmap using Plotly Express
+    fig = px.imshow(pivot_table, 
+                labels=dict(x="username", y="Time", color="Time Spent (seconds)"),
+                x=pivot_table.columns,
+                y=pivot_table.index,
+                color_continuous_scale='Viridis')
+
+    fig.update_layout(title='Time spent by each user on home screen')
+    graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+    return graphJSON
+    
+    
     
     dfg = df_merged.groupby(['Time', 'Time Spent (seconds)', 'username']).count().reset_index()
     fig = px.line(dfg, x="Time", y="Time Spent (seconds)", color='username',title='<b>Time spent by each user on Detail screen</b>', line_shape='linear')
@@ -365,6 +540,11 @@ def postDetailActivity():
 def postviewovertime():
     postsData = pd.DataFrame(list(db.posts.find()))
     postsData['createdAt'] = postsData['createdAt'].astype('datetime64[ns]')
+    
+    start_date = pd.to_datetime('2024-04-22')
+    end_date = pd.to_datetime('2024-04-26')
+    postsData = postsData[(postsData['createdAt'] >= start_date) & (postsData['createdAt'] <= end_date)]
+    
     postsData['MD'] = postsData['createdAt'].dt.strftime('%Y-%m-%d')
     
     dfg = postsData.groupby('MD').count().reset_index()
@@ -380,6 +560,10 @@ def postreadovertime():
     postsData = pd.DataFrame(list(db.posts.find()))
     postsData['createdAt'] = postsData['createdAt'].astype('datetime64[ns]')
     postsData['MD'] = postsData['createdAt'].dt.strftime('%Y-%m-%d')
+    
+    start_date = pd.to_datetime('2024-04-22')
+    end_date = pd.to_datetime('2024-04-26')
+    postsData = postsData[(postsData['createdAt'] >= start_date) & (postsData['createdAt'] <= end_date)]
     
     dfg = postsData.groupby('MD').count().reset_index()
     dfg = dfg.rename(columns={"MD": "Time", "desc": "Total Posts"})
@@ -397,7 +581,17 @@ def presurveysubmissiontime():
     presurData['uniqueId'] = presurData['uniqueId'].astype(str)
     usersData = usersData[["_id", "username", "uniqueId"]].reset_index(drop=True)
     presurData = presurData[["uniqueId", "createdAt"]].reset_index(drop=True)
+    
+    start_date = pd.to_datetime('2024-04-22')
+    end_date = pd.to_datetime('2024-04-26')
+    presurData = presurData[(presurData['createdAt'] >= start_date) & (presurData['createdAt'] <= end_date)]
+    
     df_merged = pd.merge(presurData, usersData, on ='uniqueId', how ="left")
+    
+    df_merged.set_index('createdAt', inplace=True)
+    df_merged.index = df_merged.index.tz_localize(pytz.utc).tz_convert(eastern)
+    df_merged.reset_index(inplace=True)
+    
     df_merged = df_merged.rename(columns={"createdAt":"time"})
     fig = px.bar(df_merged, x="username",y="time", title='Users who submitted the pre-survey?')
     graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
@@ -411,8 +605,16 @@ def postsurveysubmissiontime():
     presurData['userId'] = presurData['userId'].astype(str)
     usersData = usersData[["_id", "username", "uniqueId"]].reset_index(drop=True)
     usersData = usersData.rename(columns={"_id":"userId"})
+    presurData['createdAt'] = pd.to_datetime(presurData['createdAt'])
     presurData = presurData[["userId", "createdAt"]].reset_index(drop=True)
     df_merged = pd.merge(presurData, usersData, on ='userId', how ="left")
+    start_date = pd.to_datetime('2024-04-22')
+    end_date = pd.to_datetime('2024-04-26')
+    presurData = presurData[(presurData['createdAt'] >= start_date) & (presurData['createdAt'] <= end_date)]
+    
+    df_merged.set_index('createdAt', inplace=True)
+    df_merged.index = df_merged.index.tz_localize(pytz.utc).tz_convert(eastern)
+    df_merged.reset_index(inplace=True)
     
     df_merged = df_merged.rename(columns={"createdAt":"time"})
     fig = px.bar(df_merged, x="username",y="time", title='Users who submitted the post-survey?')
@@ -430,9 +632,28 @@ def totalRankedPosts():
     df_merged = pd.merge(ppl_flower, usersData, on ='userId', how ="left")
     
     df_sorted = df_merged.sort_values(by='updatedAt_x', ascending=False)
+    
+    df_sorted.set_index('updatedAt_x', inplace=True)
+    df_sorted.index = df_sorted.index.tz_localize(pytz.utc).tz_convert(eastern)
+    df_sorted.reset_index(inplace=True)
+    
     df_sorted['MD'] = df_sorted['updatedAt_x'].dt.strftime('%Y-%m-%dT%H:%M')
     df_sorted = df_sorted.rename(columns={"MD":"Time"})
-    df_sorted = df_sorted[df_sorted['rank'] != 0.0]
+    #df_sorted = df_sorted[df_sorted['rank'] != 0.0]
+    pivot_table = df_sorted.pivot_table(values='rank', index='Time', columns='username', aggfunc='sum')
+    pivot_table = pivot_table.fillna(0)
+
+    # Create the heatmap using Plotly Express
+    fig = px.imshow(pivot_table, 
+                labels=dict(x="username", y="Time", color="rank"),
+                x=pivot_table.columns,
+                y=pivot_table.index,
+                color_continuous_scale='Viridis')
+
+    fig.update_layout(title='The latest ranked posts')
+    graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+    return graphJSON
+
 
     df_sorted = df_sorted.head(10)
     fig = px.bar(df_sorted, x='Time', y='rank', color='username', title='The latest ranked posts')
@@ -440,23 +661,36 @@ def totalRankedPosts():
     return graphJSON
     
 
+
+
 @blueprint.route('/BotsTotalRepliesRoute', methods=['GET', 'POST'])
 def BotsTotalRepliesRoute():
-    one = db.users.find({'username': 'Weißes Walross'})
-    two = db.users.find({'username': 'Weißer Hase'})
-    three = db.users.find({'username': 'Schwarzer Ninja'})
-    four = db.users.find({'username': 'Oranger Ninja'})
-    five = db.users.find({'username': 'Lila Walross'})
-    six = db.users.find({'username': 'Lila Krähe'})
-    seven = db.users.find({'username': 'Lila Blume'})
-    eight = db.users.find({'username': 'Grünes Kaninchen'})
-    nine = db.users.find({'username': 'Grauer Otter'})
-    ten = db.users.find({'username': 'Graue Krähe'})
-    ele = db.users.find({'username': 'Gelber Roboter'})
-    twe = db.users.find({'username': 'Blaues Siegel'})
-    thir = db.users.find({'username': 'Blaues Huhn'})
-    fou = db.users.find({'username': 'Blauer Ninja'})
-    fif = db.users.find({'username': 'Blauer Biber'})
+    
+    one = db.users.find({'username': bot1})
+    two = db.users.find({'username': bot2})
+    three = db.users.find({'username': bot3})
+    four = db.users.find({'username': bot4})
+    five = db.users.find({'username': bot5})
+    six = db.users.find({'username': bot6})
+    seven = db.users.find({'username': bot7})
+    eight = db.users.find({'username': bot8})
+    nine = db.users.find({'username': bot9})
+    ten = db.users.find({'username': bot10})
+    ele = db.users.find({'username': bot11})
+    twe = db.users.find({'username': bot12})
+    thir = db.users.find({'username': bot13})
+    fou = db.users.find({'username': bot14})
+    fif = db.users.find({'username': bot15})
+    s16 = db.users.find({'username': bot16})
+    s17 = db.users.find({'username': bot17})
+    s18 = db.users.find({'username': bot18})
+    s19 = db.users.find({'username': bot19})
+    s20 = db.users.find({'username': bot20})
+    s21 = db.users.find({'username': bot21})
+    s22 = db.users.find({'username': bot22})
+    s23 = db.users.find({'username': bot23})
+    s24 = db.users.find({'username': bot24})
+    
     
     one_latest = pd.DataFrame()
     two_latest = pd.DataFrame()
@@ -473,6 +707,15 @@ def BotsTotalRepliesRoute():
     thir_latest = pd.DataFrame()
     fou_latest = pd.DataFrame()
     fif_latest = pd.DataFrame()
+    s16_latest = pd.DataFrame()
+    s17_latest = pd.DataFrame()
+    s18_latest = pd.DataFrame()
+    s19_latest = pd.DataFrame()
+    s20_latest = pd.DataFrame()
+    s21_latest = pd.DataFrame()
+    s22_latest = pd.DataFrame()
+    s23_latest = pd.DataFrame()
+    s24_latest = pd.DataFrame()
     
     try:
         ppl_flower = pd.DataFrame(list(db.comments.find({"userId":one[0]["_id"]})))
@@ -580,11 +823,72 @@ def BotsTotalRepliesRoute():
     except Exception as e:
         print("An error occurred:", e)
         
+    try:
+        ppl_flower = pd.DataFrame(list(db.comments.find({"userId":s16[0]["_id"]})))
+        df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
+        s16_latest = df_sorted.head(2)
+    except Exception as e:
+        print("An error occurred:", e)
+    
+    try:
+        ppl_flower = pd.DataFrame(list(db.comments.find({"userId":s17[0]["_id"]})))
+        df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
+        s17_latest = df_sorted.head(2)
+    except Exception as e:
+        print("An error occurred:", e)
+
+    try:
+        ppl_flower = pd.DataFrame(list(db.comments.find({"userId":s18[0]["_id"]})))
+        df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
+        s18_latest = df_sorted.head(2)
+    except Exception as e:
+        print("An error occurred:", e)
+
+    try:
+        ppl_flower = pd.DataFrame(list(db.comments.find({"userId":s19[0]["_id"]})))
+        df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
+        s19_latest = df_sorted.head(2)
+    except Exception as e:
+        print("An error occurred:", e)
+
+    try:
+        ppl_flower = pd.DataFrame(list(db.comments.find({"userId":s20[0]["_id"]})))
+        df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
+        s20_latest = df_sorted.head(2)
+    except Exception as e:
+        print("An error occurred:", e)
+
+    try:
+        ppl_flower = pd.DataFrame(list(db.comments.find({"userId":s21[0]["_id"]})))
+        df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
+        s21_latest = df_sorted.head(2)
+    except Exception as e:
+        print("An error occurred:", e)
         
+    try:
+        ppl_flower = pd.DataFrame(list(db.comments.find({"userId":s22[0]["_id"]})))
+        df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
+        s22_latest = df_sorted.head(2)
+    except Exception as e:
+        print("An error occurred:", e)
+
+    try:
+        ppl_flower = pd.DataFrame(list(db.comments.find({"userId":s23[0]["_id"]})))
+        df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
+        s23_latest = df_sorted.head(2)
+    except Exception as e:
+        print("An error occurred:", e)
+
+    try:
+        ppl_flower = pd.DataFrame(list(db.comments.find({"userId":s24[0]["_id"]})))
+        df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
+        s24_latest = df_sorted.head(2)
+    except Exception as e:
+        print("An error occurred:", e)
         
         
     try:
-        dfs = [one_latest, two_latest, three_latest, four_latest, five_latest, six_latest, seven_latest, eight_latest, nine_latest, ten_latest, ele_latest, twe_latest, thir_latest, fou_latest, fif_latest]
+        dfs = [one_latest, two_latest, three_latest, four_latest, five_latest, six_latest, seven_latest, eight_latest, nine_latest, ten_latest, ele_latest, twe_latest, thir_latest, fou_latest, fif_latest, s16_latest, s17_latest, s18_latest, s19_latest, s20_latest, s21_latest, s22_latest, s23_latest, s24_latest]
         dfs_defined = [df for df in dfs if df is not None] 
 
         if dfs_defined:
@@ -595,11 +899,15 @@ def BotsTotalRepliesRoute():
             if len(concatenated_df) > 0:
                 print(concatenated_df.columns)
                 concatenated_df = concatenated_df.sort_values(by='updatedAt', ascending=False)
+                
+                concatenated_df.set_index('updatedAt', inplace=True)
+                concatenated_df.index = concatenated_df.index.tz_localize(pytz.utc).tz_convert(eastern)
+                concatenated_df.reset_index(inplace=True)
         
                 latest_updates = concatenated_df.groupby('username').tail(5)
                 latest_updates['MD'] = latest_updates['updatedAt'].dt.strftime('%Y-%m-%dT%H:%M')
                 latest_updates = latest_updates.rename(columns={"MD":"Time"})
-                #latest_updates = latest_updates.head(15)
+                latest_updates = latest_updates.head(15)
                 fig = px.bar(latest_updates, x='Time', y='index', color='username', barmode='group', title='The most recent comments on posts')
                 graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
                 return graphJSON
@@ -612,21 +920,30 @@ def BotsTotalRepliesRoute():
         
 @blueprint.route('/BotsTotalPostsRoute', methods=['GET', 'POST'])
 def BotsTotalPostsRoute():
-    one = db.users.find({'username': 'Weißes Walross'})
-    two = db.users.find({'username': 'Weißer Hase'})
-    three = db.users.find({'username': 'Schwarzer Ninja'})
-    four = db.users.find({'username': 'Oranger Ninja'})
-    five = db.users.find({'username': 'Lila Walross'})
-    six = db.users.find({'username': 'Lila Krähe'})
-    seven = db.users.find({'username': 'Lila Blume'})
-    eight = db.users.find({'username': 'Grünes Kaninchen'})
-    nine = db.users.find({'username': 'Grauer Otter'})
-    ten = db.users.find({'username': 'Graue Krähe'})
-    ele = db.users.find({'username': 'Gelber Roboter'})
-    twe = db.users.find({'username': 'Blaues Siegel'})
-    thir = db.users.find({'username': 'Blaues Huhn'})
-    fou = db.users.find({'username': 'Blauer Ninja'})
-    fif = db.users.find({'username': 'Blauer Biber'})
+    one = db.users.find({'username': bot1})
+    two = db.users.find({'username': bot2})
+    three = db.users.find({'username': bot3})
+    four = db.users.find({'username': bot4})
+    five = db.users.find({'username': bot5})
+    six = db.users.find({'username': bot6})
+    seven = db.users.find({'username': bot7})
+    eight = db.users.find({'username': bot8})
+    nine = db.users.find({'username': bot9})
+    ten = db.users.find({'username': bot10})
+    ele = db.users.find({'username': bot11})
+    twe = db.users.find({'username': bot12})
+    thir = db.users.find({'username': bot13})
+    fou = db.users.find({'username': bot14})
+    fif = db.users.find({'username': bot15})
+    s16 = db.users.find({'username': bot16})
+    s17 = db.users.find({'username': bot17})
+    s18 = db.users.find({'username': bot18})
+    s19 = db.users.find({'username': bot19})
+    s20 = db.users.find({'username': bot20})
+    s21 = db.users.find({'username': bot21})
+    s22 = db.users.find({'username': bot22})
+    s23 = db.users.find({'username': bot23})
+    s24 = db.users.find({'username': bot24})
     
     one_latest = pd.DataFrame()
     two_latest = pd.DataFrame()
@@ -643,6 +960,15 @@ def BotsTotalPostsRoute():
     thir_latest = pd.DataFrame()
     fou_latest = pd.DataFrame()
     fif_latest = pd.DataFrame()
+    s16_latest = pd.DataFrame()
+    s17_latest = pd.DataFrame()
+    s18_latest = pd.DataFrame()
+    s19_latest = pd.DataFrame()
+    s20_latest = pd.DataFrame()
+    s21_latest = pd.DataFrame()
+    s22_latest = pd.DataFrame()
+    s23_latest = pd.DataFrame()
+    s24_latest = pd.DataFrame()
     
     print(one[0]["_id"])
     print(two[0]["_id"])
@@ -661,7 +987,7 @@ def BotsTotalPostsRoute():
     
     try:
         ppl_flower = pd.DataFrame(list(db.posts.find({"userId":str(one[0]["_id"])})))
-        ppl_flower["username"] = "Weißes Walross"
+        ppl_flower["username"] = bot1
         df_sorted = ppl_flower.sort_values(by='createdAt', ascending=False)
         one_latest = df_sorted.head(2)
     except Exception as e:
@@ -669,7 +995,7 @@ def BotsTotalPostsRoute():
     
     try:
         ppl_flower = pd.DataFrame(list(db.posts.find({"userId":str(two[0]["_id"])})))
-        ppl_flower["username"] = "Weißer Hase"
+        ppl_flower["username"] = bot2
         df_sorted = ppl_flower.sort_values(by='createdAt', ascending=False)
         two_latest = df_sorted.head(2)
     except Exception as e:
@@ -677,7 +1003,7 @@ def BotsTotalPostsRoute():
 
     try:
         ppl_flower = pd.DataFrame(list(db.posts.find({"userId":str(three[0]["_id"])})))
-        ppl_flower["username"] = "Schwarzer Ninja"
+        ppl_flower["username"] = bot3
         df_sorted = ppl_flower.sort_values(by='createdAt', ascending=False)
         three_latest = df_sorted.head(2)
     except Exception as e:
@@ -685,7 +1011,7 @@ def BotsTotalPostsRoute():
 
     try:
         ppl_flower = pd.DataFrame(list(db.posts.find({"userId":str(four[0]["_id"])})))
-        ppl_flower["username"] = "Oranger Ninja"
+        ppl_flower["username"] = bot4
         df_sorted = ppl_flower.sort_values(by='createdAt', ascending=False)
         four_latest = df_sorted.head(2)
     except Exception as e:
@@ -693,7 +1019,7 @@ def BotsTotalPostsRoute():
 
     try:
         ppl_flower = pd.DataFrame(list(db.posts.find({"userId":str(five[0]["_id"])})))
-        ppl_flower["username"] = "Lila Walross"
+        ppl_flower["username"] = bot5
         df_sorted = ppl_flower.sort_values(by='createdAt', ascending=False)
         five_latest = df_sorted.head(2)
     except Exception as e:
@@ -701,7 +1027,7 @@ def BotsTotalPostsRoute():
 
     try:
         ppl_flower = pd.DataFrame(list(db.posts.find({"userId":str(six[0]["_id"])})))
-        ppl_flower["username"] = "Lila Krähe"
+        ppl_flower["username"] = bot6
         df_sorted = ppl_flower.sort_values(by='createdAt', ascending=False)
         six_latest = df_sorted.head(2)
     except Exception as e:
@@ -710,7 +1036,7 @@ def BotsTotalPostsRoute():
         
     try:
         ppl_flower = pd.DataFrame(list(db.posts.find({"userId":str(seven[0]["_id"])})))
-        ppl_flower["username"] = "Lila Blume"
+        ppl_flower["username"] = bot7
         df_sorted = ppl_flower.sort_values(by='createdAt', ascending=False)
         seven_latest = df_sorted.head(2)
     except Exception as e:
@@ -718,7 +1044,7 @@ def BotsTotalPostsRoute():
     
     try:
         ppl_flower = pd.DataFrame(list(db.posts.find({"userId":str(eight[0]["_id"])})))
-        ppl_flower["username"] = "Grünes Kaninchen"
+        ppl_flower["username"] = bot8
         df_sorted = ppl_flower.sort_values(by='createdAt', ascending=False)
         eight_latest = df_sorted.head(2)
     except Exception as e:
@@ -726,7 +1052,7 @@ def BotsTotalPostsRoute():
 
     try:
         ppl_flower = pd.DataFrame(list(db.posts.find({"userId":str(nine[0]["_id"])})))
-        ppl_flower["username"] = "Grauer Otter"
+        ppl_flower["username"] = bot9
         df_sorted = ppl_flower.sort_values(by='createdAt', ascending=False)
         nine_latest = df_sorted.head(2)
     except Exception as e:
@@ -734,7 +1060,7 @@ def BotsTotalPostsRoute():
 
     try:
         ppl_flower = pd.DataFrame(list(db.posts.find({"userId":str(ten[0]["_id"])})))
-        ppl_flower["username"] = "Graue Krähe"
+        ppl_flower["username"] = bot10
         df_sorted = ppl_flower.sort_values(by='createdAt', ascending=False)
         ten_latest = df_sorted.head(2)
     except Exception as e:
@@ -742,7 +1068,7 @@ def BotsTotalPostsRoute():
 
     try:
         ppl_flower = pd.DataFrame(list(db.posts.find({"userId":str(ele[0]["_id"])})))
-        ppl_flower["username"] = "Gelber Roboter"
+        ppl_flower["username"] = bot11
         df_sorted = ppl_flower.sort_values(by='createdAt', ascending=False)
         ele_latest = df_sorted.head(2)
     except Exception as e:
@@ -750,7 +1076,7 @@ def BotsTotalPostsRoute():
 
     try:
         ppl_flower = pd.DataFrame(list(db.posts.find({"userId":str(twe[0]["_id"])})))
-        ppl_flower["username"] = "Blaues Siegel"
+        ppl_flower["username"] = bot12
         df_sorted = ppl_flower.sort_values(by='createdAt', ascending=False)
         twe_latest = df_sorted.head(2)
     except Exception as e:
@@ -758,7 +1084,7 @@ def BotsTotalPostsRoute():
         
     try:
         ppl_flower = pd.DataFrame(list(db.posts.find({"userId":str(thir[0]["_id"])})))
-        ppl_flower["username"] = "Blaues Huhn"
+        ppl_flower["username"] = bot13
         df_sorted = ppl_flower.sort_values(by='createdAt', ascending=False)
         thir_latest = df_sorted.head(2)
     except Exception as e:
@@ -766,7 +1092,7 @@ def BotsTotalPostsRoute():
 
     try:
         ppl_flower = pd.DataFrame(list(db.posts.find({"userId":str(fou[0]["_id"])})))
-        ppl_flower["username"] = "Blauer Ninja"
+        ppl_flower["username"] = bot14
         df_sorted = ppl_flower.sort_values(by='createdAt', ascending=False)
         fou_latest = df_sorted.head(2)
     except Exception as e:
@@ -774,18 +1100,89 @@ def BotsTotalPostsRoute():
 
     try:
         ppl_flower = pd.DataFrame(list(db.posts.find({"userId":str(fif[0]["_id"])})))
-        ppl_flower["username"] = "Blauer Biber"
+        ppl_flower["username"] = bot15
         df_sorted = ppl_flower.sort_values(by='createdAt', ascending=False)
         fif_latest = df_sorted.head(2)
     except Exception as e:
         print("An error occurred:", e)
+    
+    try:
+        ppl_flower = pd.DataFrame(list(db.posts.find({"userId":str(s16[0]["_id"])})))
+        ppl_flower["username"] = bot16
+        df_sorted = ppl_flower.sort_values(by='createdAt', ascending=False)
+        s16_latest = df_sorted.head(2)
+    except Exception as e:
+        print("here here An error occurred:", e)
+    
+    try:
+        ppl_flower = pd.DataFrame(list(db.posts.find({"userId":str(s17[0]["_id"])})))
+        ppl_flower["username"] = bot17
+        df_sorted = ppl_flower.sort_values(by='createdAt', ascending=False)
+        s17_latest = df_sorted.head(2)
+    except Exception as e:
+        print("An error occurred:", e)
+
+    try:
+        ppl_flower = pd.DataFrame(list(db.posts.find({"userId":str(s18[0]["_id"])})))
+        ppl_flower["username"] = bot18
+        df_sorted = ppl_flower.sort_values(by='createdAt', ascending=False)
+        s18_latest = df_sorted.head(2)
+    except Exception as e:
+        print("An error occurred:", e)
+
+    try:
+        ppl_flower = pd.DataFrame(list(db.posts.find({"userId":str(s19[0]["_id"])})))
+        ppl_flower["username"] = bot19
+        df_sorted = ppl_flower.sort_values(by='createdAt', ascending=False)
+        s19_latest = df_sorted.head(2)
+    except Exception as e:
+        print("An error occurred:", e)
+
+    try:
+        ppl_flower = pd.DataFrame(list(db.posts.find({"userId":str(s20[0]["_id"])})))
+        ppl_flower["username"] = bot20
+        df_sorted = ppl_flower.sort_values(by='createdAt', ascending=False)
+        s20_latest = df_sorted.head(2)
+    except Exception as e:
+        print("An error occurred:", e)
+
+    try:
+        ppl_flower = pd.DataFrame(list(db.posts.find({"userId":str(s21[0]["_id"])})))
+        ppl_flower["username"] = bot21
+        df_sorted = ppl_flower.sort_values(by='createdAt', ascending=False)
+        s21_latest = df_sorted.head(2)
+    except Exception as e:
+        print("An error occurred:", e)
         
-        
+    try:
+        ppl_flower = pd.DataFrame(list(db.posts.find({"userId":str(s22[0]["_id"])})))
+        ppl_flower["username"] = bot22
+        df_sorted = ppl_flower.sort_values(by='createdAt', ascending=False)
+        s22_latest = df_sorted.head(2)
+    except Exception as e:
+        print("An error occurred:", e)
+
+    try:
+        ppl_flower = pd.DataFrame(list(db.posts.find({"userId":str(s23[0]["_id"])})))
+        ppl_flower["username"] = bot23
+        df_sorted = ppl_flower.sort_values(by='createdAt', ascending=False)
+        s23_latest = df_sorted.head(2)
+    except Exception as e:
+        print("An error occurred:", e)
+
+    try:
+        ppl_flower = pd.DataFrame(list(db.posts.find({"userId":str(s24[0]["_id"])})))
+        ppl_flower["username"] = bot24
+        df_sorted = ppl_flower.sort_values(by='createdAt', ascending=False)
+        s24_latest = df_sorted.head(2)
+    except Exception as e:
+        print("An error occurred:", e)
         
         
     try:
-        dfs = [one_latest, two_latest, three_latest, four_latest, five_latest, six_latest, seven_latest, eight_latest, nine_latest, ten_latest, ele_latest, twe_latest, thir_latest, fou_latest, fif_latest]
+        dfs = [one_latest, two_latest, three_latest, four_latest, five_latest, six_latest, seven_latest, eight_latest, nine_latest, ten_latest, ele_latest, twe_latest, thir_latest, fou_latest, fif_latest, s16_latest, s17_latest, s18_latest, s19_latest, s20_latest, s21_latest, s22_latest, s23_latest, s24_latest]
         dfs_defined = [df for df in dfs if df is not None] 
+        
         print("Booooooooooooooots  Pooooooosts")
         print(len(one_latest))
         print(len(two_latest))
@@ -802,6 +1199,15 @@ def BotsTotalPostsRoute():
         print(len(thir_latest))
         print(len(fou_latest))
         print(len(fif_latest))
+        print(len(s16_latest))
+        print(len(s17_latest))
+        print(len(s18_latest))
+        print(len(s19_latest))
+        print(len(s20_latest))
+        print(len(s21_latest))
+        print(len(s22_latest))
+        print(len(s23_latest))
+        print(len(s24_latest))
 
         if dfs_defined:
             concatenated_df = pd.concat(dfs_defined)
@@ -812,11 +1218,14 @@ def BotsTotalPostsRoute():
             if len(concatenated_df) > 0:
                 
                 concatenated_df = concatenated_df.sort_values(by='createdAt', ascending=False)
+                concatenated_df.set_index('createdAt', inplace=True)
+                concatenated_df.index = concatenated_df.index.tz_localize(pytz.utc).tz_convert(eastern)
+                concatenated_df.reset_index(inplace=True)
         
                 latest_updates = concatenated_df.groupby('username').tail(5)
                 latest_updates['MD'] = latest_updates['createdAt'].dt.strftime('%Y-%m-%dT%H:%M')
                 latest_updates = latest_updates.rename(columns={"MD":"Time"})
-                #latest_updates = latest_updates.head(15)
+                latest_updates = latest_updates.head(15)
                 fig = px.bar(latest_updates, x='Time', y='index', color='username', barmode='group', title='The most recent posts')
                 graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
                 return graphJSON
@@ -829,21 +1238,30 @@ def BotsTotalPostsRoute():
         
 @blueprint.route('/BotsTotalLikedComentsRoute', methods=['GET', 'POST'])
 def BotsTotalLikedComentsRoute():
-    one = db.users.find({'username': 'Weißes Walross'})
-    two = db.users.find({'username': 'Weißer Hase'})
-    three = db.users.find({'username': 'Schwarzer Ninja'})
-    four = db.users.find({'username': 'Oranger Ninja'})
-    five = db.users.find({'username': 'Lila Walross'})
-    six = db.users.find({'username': 'Lila Krähe'})
-    seven = db.users.find({'username': 'Lila Blume'})
-    eight = db.users.find({'username': 'Grünes Kaninchen'})
-    nine = db.users.find({'username': 'Grauer Otter'})
-    ten = db.users.find({'username': 'Graue Krähe'})
-    ele = db.users.find({'username': 'Gelber Roboter'})
-    twe = db.users.find({'username': 'Blaues Siegel'})
-    thir = db.users.find({'username': 'Blaues Huhn'})
-    fou = db.users.find({'username': 'Blauer Ninja'})
-    fif = db.users.find({'username': 'Blauer Biber'})
+    one = db.users.find({'username': bot1})
+    two = db.users.find({'username': bot2})
+    three = db.users.find({'username': bot3})
+    four = db.users.find({'username': bot4})
+    five = db.users.find({'username': bot5})
+    six = db.users.find({'username': bot6})
+    seven = db.users.find({'username': bot7})
+    eight = db.users.find({'username': bot8})
+    nine = db.users.find({'username': bot9})
+    ten = db.users.find({'username': bot10})
+    ele = db.users.find({'username': bot11})
+    twe = db.users.find({'username': bot12})
+    thir = db.users.find({'username': bot13})
+    fou = db.users.find({'username': bot14})
+    fif = db.users.find({'username': bot15})
+    s16 = db.users.find({'username': bot16})
+    s17 = db.users.find({'username': bot17})
+    s18 = db.users.find({'username': bot18})
+    s19 = db.users.find({'username': bot19})
+    s20 = db.users.find({'username': bot20})
+    s21 = db.users.find({'username': bot21})
+    s22 = db.users.find({'username': bot22})
+    s23 = db.users.find({'username': bot23})
+    s24 = db.users.find({'username': bot24})
     
     one_latest = pd.DataFrame()
     two_latest = pd.DataFrame()
@@ -860,131 +1278,215 @@ def BotsTotalLikedComentsRoute():
     thir_latest = pd.DataFrame()
     fou_latest = pd.DataFrame()
     fif_latest = pd.DataFrame()
+    s16_latest = pd.DataFrame()
+    s17_latest = pd.DataFrame()
+    s18_latest = pd.DataFrame()
+    s19_latest = pd.DataFrame()
+    s20_latest = pd.DataFrame()
+    s21_latest = pd.DataFrame()
+    s22_latest = pd.DataFrame()
+    s23_latest = pd.DataFrame()
+    s24_latest = pd.DataFrame()
     
     try:
         ppl_flower = pd.DataFrame(list(db.commentlikes.find({"userId":one[0]["_id"]})))
-        ppl_flower["username"] = "Weißes Walross"
+        ppl_flower["username"] = bot1
         df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
-        one_latest = df_sorted.head(2)
+        one_latest = df_sorted.head(1)
     except Exception as e:
         print("An error occurred:", e)
     
     try:
         ppl_flower = pd.DataFrame(list(db.commentlikes.find({"userId":two[0]["_id"]})))
-        ppl_flower["username"] = "Weißer Hase"
+        ppl_flower["username"] = bot2
         df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
-        two_latest = df_sorted.head(2)
+        two_latest = df_sorted.head(1)
     except Exception as e:
         print("An error occurred:", e)
 
     try:
         ppl_flower = pd.DataFrame(list(db.commentlikes.find({"userId":three[0]["_id"]})))
-        ppl_flower["username"] = "Schwarzer Ninja"
+        ppl_flower["username"] = bot3
         df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
-        three_latest = df_sorted.head(2)
+        three_latest = df_sorted.head(1)
     except Exception as e:
         print("An error occurred:", e)
 
     try:
         ppl_flower = pd.DataFrame(list(db.commentlikes.find({"userId":four[0]["_id"]})))
-        ppl_flower["username"] = "Oranger Ninja"
+        ppl_flower["username"] = bot4
         df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
-        four_latest = df_sorted.head(2)
+        four_latest = df_sorted.head(1)
     except Exception as e:
         print("An error occurred:", e)
 
     try:
         ppl_flower = pd.DataFrame(list(db.commentlikes.find({"userId":five[0]["_id"]})))
-        ppl_flower["username"] = "Lila Walross"
+        ppl_flower["username"] = bot5
         df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
-        five_latest = df_sorted.head(2)
+        five_latest = df_sorted.head(1)
     except Exception as e:
         print("An error occurred:", e)
 
     try:
         ppl_flower = pd.DataFrame(list(db.commentlikes.find({"userId":six[0]["_id"]})))
-        ppl_flower["username"] = "Lila Krähe"
+        ppl_flower["username"] = bot6
         df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
-        six_latest = df_sorted.head(2)
+        six_latest = df_sorted.head(1)
     except Exception as e:
         print("An error occurred:", e)
         
         
     try:
         ppl_flower = pd.DataFrame(list(db.commentlikes.find({"userId":seven[0]["_id"]})))
-        ppl_flower["username"] = "Lila Blume"
+        ppl_flower["username"] = bot7
         df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
-        seven_latest = df_sorted.head(2)
+        seven_latest = df_sorted.head(1)
     except Exception as e:
         print("An error occurred:", e)
     
     try:
         ppl_flower = pd.DataFrame(list(db.commentlikes.find({"userId":eight[0]["_id"]})))
-        ppl_flower["username"] = "Grünes Kaninchen"
+        ppl_flower["username"] = bot8
         df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
-        eight_latest = df_sorted.head(2)
+        eight_latest = df_sorted.head(1)
     except Exception as e:
         print("An error occurred:", e)
 
     try:
         ppl_flower = pd.DataFrame(list(db.commentlikes.find({"userId":nine[0]["_id"]})))
-        ppl_flower["username"] = "Grauer Otter"
+        ppl_flower["username"] = bot9
         df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
-        nine_latest = df_sorted.head(2)
+        nine_latest = df_sorted.head(1)
     except Exception as e:
         print("An error occurred:", e)
 
     try:
         ppl_flower = pd.DataFrame(list(db.commentlikes.find({"userId":ten[0]["_id"]})))
-        ppl_flower["username"] = "Graue Krähe"
+        ppl_flower["username"] = bot10
         df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
-        ten_latest = df_sorted.head(2)
+        ten_latest = df_sorted.head(1)
     except Exception as e:
         print("An error occurred:", e)
 
     try:
         ppl_flower = pd.DataFrame(list(db.commentlikes.find({"userId":ele[0]["_id"]})))
-        ppl_flower["username"] = "Gelber Roboter"
+        ppl_flower["username"] = bot11
         df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
-        ele_latest = df_sorted.head(2)
+        ele_latest = df_sorted.head(1)
     except Exception as e:
         print("An error occurred:", e)
 
     try:
         ppl_flower = pd.DataFrame(list(db.commentlikes.find({"userId":twe[0]["_id"]})))
-        ppl_flower["username"] = "Blaues Siegel"
+        ppl_flower["username"] = bot12
         df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
-        twe_latest = df_sorted.head(2)
+        twe_latest = df_sorted.head(1)
     except Exception as e:
         print("An error occurred:", e)
         
     try:
         ppl_flower = pd.DataFrame(list(db.commentlikes.find({"userId":thir[0]["_id"]})))
-        ppl_flower["username"] = "Blaues Huhn"
+        ppl_flower["username"] = bot13
         df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
-        thir_latest = df_sorted.head(2)
+        thir_latest = df_sorted.head(1)
     except Exception as e:
         print("An error occurred:", e)
 
     try:
         ppl_flower = pd.DataFrame(list(db.commentlikes.find({"userId":fou[0]["_id"]})))
-        ppl_flower["username"] = "Blauer Ninja"
+        ppl_flower["username"] = bot14
         df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
-        fou_latest = df_sorted.head(2)
+        fou_latest = df_sorted.head(1)
     except Exception as e:
         print("An error occurred:", e)
 
     try:
         ppl_flower = pd.DataFrame(list(db.commentlikes.find({"userId":fif[0]["_id"]})))
-        ppl_flower["username"] = "Blauer Biber"
+        ppl_flower["username"] = bot15
         df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
-        fif_latest = df_sorted.head(2)
+        fif_latest = df_sorted.head(1)
     except Exception as e:
         print("An error occurred:", e)
         
         
     try:
-        dfs = [one_latest, two_latest, three_latest, four_latest, five_latest, six_latest, seven_latest, eight_latest, nine_latest, ten_latest, ele_latest, twe_latest, thir_latest, fou_latest, fif_latest]
+        ppl_flower = pd.DataFrame(list(db.commentlikes.find({"userId":s16[0]["_id"]})))
+        ppl_flower["username"] = bot16
+        df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
+        s16_latest = df_sorted.head(1)
+    except Exception as e:
+        print("Check An error occurred:", e)
+    
+    try:
+        ppl_flower = pd.DataFrame(list(db.commentlikes.find({"userId":s17[0]["_id"]})))
+        ppl_flower["username"] = bot17
+        df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
+        s17_latest = df_sorted.head(1)
+    except Exception as e:
+        print("An error occurred:", e)
+
+    try:
+        ppl_flower = pd.DataFrame(list(db.commentlikes.find({"userId":s18[0]["_id"]})))
+        ppl_flower["username"] = bot18
+        df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
+        s18_latest = df_sorted.head(1)
+    except Exception as e:
+        print("An error occurred:", e)
+
+    try:
+        ppl_flower = pd.DataFrame(list(db.commentlikes.find({"userId":s19[0]["_id"]})))
+        ppl_flower["username"] = bot19
+        df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
+        s19_latest = df_sorted.head(1)
+    except Exception as e:
+        print("An error occurred:", e)
+
+    try:
+        ppl_flower = pd.DataFrame(list(db.commentlikes.find({"userId":s20[0]["_id"]})))
+        ppl_flower["username"] = bot20
+        df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
+        s20_latest = df_sorted.head(1)
+    except Exception as e:
+        print("An error occurred:", e)
+
+    try:
+        ppl_flower = pd.DataFrame(list(db.commentlikes.find({"userId":s21[0]["_id"]})))
+        ppl_flower["username"] = bot21
+        df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
+        s21_latest = df_sorted.head(1)
+    except Exception as e:
+        print("An error occurred:", e)
+        
+    try:
+        ppl_flower = pd.DataFrame(list(db.commentlikes.find({"userId":s22[0]["_id"]})))
+        ppl_flower["username"] = bot22
+        df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
+        s22_latest = df_sorted.head(1)
+    except Exception as e:
+        print("An error occurred:", e)
+
+    try:
+        ppl_flower = pd.DataFrame(list(db.commentlikes.find({"userId":s23[0]["_id"]})))
+        ppl_flower["username"] = bot23
+        df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
+        s23_latest = df_sorted.head(1)
+    except Exception as e:
+        print("An error occurred:", e)
+
+    try:
+        ppl_flower = pd.DataFrame(list(db.commentlikes.find({"userId":s24[0]["_id"]})))
+        ppl_flower["username"] = bot24
+        df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
+        s24_latest = df_sorted.head(1)
+    except Exception as e:
+        print("An error occurred:", e)
+        
+        
+        
+        
+    try:
+        dfs = [one_latest, two_latest, three_latest, four_latest, five_latest, six_latest, seven_latest, eight_latest, nine_latest, ten_latest, ele_latest, twe_latest, thir_latest, fou_latest, fif_latest, s16_latest, s17_latest, s18_latest, s19_latest, s20_latest, s21_latest, s22_latest, s23_latest, s24_latest]
         dfs_defined = [df for df in dfs if df is not None] 
 
         if dfs_defined:
@@ -993,14 +1495,19 @@ def BotsTotalLikedComentsRoute():
             concatenated_df['index'] = concatenated_df.reset_index().index + 1
             print(len(concatenated_df))
             if len(concatenated_df) > 0:
+                print("Check")
                 print(concatenated_df.columns)
                 concatenated_df = concatenated_df.sort_values(by='updatedAt', ascending=False)
+                concatenated_df.set_index('updatedAt', inplace=True)
+                concatenated_df.index = concatenated_df.index.tz_localize(pytz.utc).tz_convert(eastern)
+                concatenated_df.reset_index(inplace=True)
         
                 latest_updates = concatenated_df.groupby('username').tail(5)
                 latest_updates['MD'] = latest_updates['updatedAt'].dt.strftime('%Y-%m-%dT%H:%M')
                 latest_updates = latest_updates.rename(columns={"MD":"Time"})
-                #latest_updates = latest_updates.head(15)
+                latest_updates = latest_updates.head(15)
                 fig = px.bar(latest_updates, x='Time', y='index', color='username', barmode='group', title='The most recent likes on comments')
+                
                 graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
                 return graphJSON
             else:
@@ -1012,21 +1519,30 @@ def BotsTotalLikedComentsRoute():
 
 @blueprint.route('/BotsTotalLikedPostsRoute', methods=['GET', 'POST'])
 def BotsTotalLikedPostsRoute():
-    one = db.users.find({'username': 'Weißes Walross'})
-    two = db.users.find({'username': 'Weißer Hase'})
-    three = db.users.find({'username': 'Schwarzer Ninja'})
-    four = db.users.find({'username': 'Oranger Ninja'})
-    five = db.users.find({'username': 'Lila Walross'})
-    six = db.users.find({'username': 'Lila Krähe'})
-    seven = db.users.find({'username': 'Lila Blume'})
-    eight = db.users.find({'username': 'Grünes Kaninchen'})
-    nine = db.users.find({'username': 'Grauer Otter'})
-    ten = db.users.find({'username': 'Graue Krähe'})
-    ele = db.users.find({'username': 'Gelber Roboter'})
-    twe = db.users.find({'username': 'Blaues Siegel'})
-    thir = db.users.find({'username': 'Blaues Huhn'})
-    fou = db.users.find({'username': 'Blauer Ninja'})
-    fif = db.users.find({'username': 'Blauer Biber'})
+    one = db.users.find({'username': bot1})
+    two = db.users.find({'username': bot2})
+    three = db.users.find({'username': bot3})
+    four = db.users.find({'username': bot4})
+    five = db.users.find({'username': bot5})
+    six = db.users.find({'username': bot6})
+    seven = db.users.find({'username': bot7})
+    eight = db.users.find({'username': bot8})
+    nine = db.users.find({'username': bot9})
+    ten = db.users.find({'username': bot10})
+    ele = db.users.find({'username': bot11})
+    twe = db.users.find({'username': bot12})
+    thir = db.users.find({'username': bot13})
+    fou = db.users.find({'username': bot14})
+    fif = db.users.find({'username': bot15})
+    s16 = db.users.find({'username': bot16})
+    s17 = db.users.find({'username': bot17})
+    s18 = db.users.find({'username': bot18})
+    s19 = db.users.find({'username': bot19})
+    s20 = db.users.find({'username': bot20})
+    s21 = db.users.find({'username': bot21})
+    s22 = db.users.find({'username': bot22})
+    s23 = db.users.find({'username': bot23})
+    s24 = db.users.find({'username': bot24})
     
     one_latest = pd.DataFrame()
     two_latest = pd.DataFrame()
@@ -1043,130 +1559,215 @@ def BotsTotalLikedPostsRoute():
     thir_latest = pd.DataFrame()
     fou_latest = pd.DataFrame()
     fif_latest = pd.DataFrame()
+    s16_latest = pd.DataFrame()
+    s17_latest = pd.DataFrame()
+    s18_latest = pd.DataFrame()
+    s19_latest = pd.DataFrame()
+    s20_latest = pd.DataFrame()
+    s21_latest = pd.DataFrame()
+    s22_latest = pd.DataFrame()
+    s23_latest = pd.DataFrame()
+    s24_latest = pd.DataFrame()
     
     try:
         ppl_flower = pd.DataFrame(list(db.postlikes.find({"userId":one[0]["_id"]})))
-        ppl_flower["username"] = "Weißes Walross"
+        ppl_flower["username"] = bot1
         df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
-        one_latest = df_sorted.head(2)
+        one_latest = df_sorted.head(1)
     except Exception as e:
         print("An error occurred:", e)
     
     try:
         ppl_flower = pd.DataFrame(list(db.postlikes.find({"userId":two[0]["_id"]})))
-        ppl_flower["username"] = "Weißer Hase"
+        ppl_flower["username"] = bot2
         df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
-        two_latest = df_sorted.head(2)
+        two_latest = df_sorted.head(1)
     except Exception as e:
         print("An error occurred:", e)
 
     try:
         ppl_flower = pd.DataFrame(list(db.postlikes.find({"userId":three[0]["_id"]})))
-        ppl_flower["username"] = "Schwarzer Ninja"
+        ppl_flower["username"] = bot3
         df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
-        three_latest = df_sorted.head(2)
+        three_latest = df_sorted.head(1)
     except Exception as e:
         print("An error occurred:", e)
 
     try:
         ppl_flower = pd.DataFrame(list(db.postlikes.find({"userId":four[0]["_id"]})))
-        ppl_flower["username"] = "Oranger Ninja"
+        ppl_flower["username"] = bot4
         df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
-        four_latest = df_sorted.head(2)
+        four_latest = df_sorted.head(1)
     except Exception as e:
         print("An error occurred:", e)
 
     try:
         ppl_flower = pd.DataFrame(list(db.postlikes.find({"userId":five[0]["_id"]})))
-        ppl_flower["username"] = "Lila Walross"
+        ppl_flower["username"] = bot5
         df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
-        five_latest = df_sorted.head(2)
+        five_latest = df_sorted.head(1)
     except Exception as e:
         print("An error occurred:", e)
 
     try:
         ppl_flower = pd.DataFrame(list(db.postlikes.find({"userId":six[0]["_id"]})))
-        ppl_flower["username"] = "Lila Krähe"
+        ppl_flower["username"] = bot6
         df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
-        six_latest = df_sorted.head(2)
+        six_latest = df_sorted.head(1)
     except Exception as e:
         print("An error occurred:", e)
         
         
     try:
         ppl_flower = pd.DataFrame(list(db.postlikes.find({"userId":seven[0]["_id"]})))
-        ppl_flower["username"] = "Lila Blume"
+        ppl_flower["username"] = bot7
         df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
-        seven_latest = df_sorted.head(2)
+        seven_latest = df_sorted.head(1)
     except Exception as e:
         print("An error occurred:", e)
     
     try:
         ppl_flower = pd.DataFrame(list(db.postlikes.find({"userId":eight[0]["_id"]})))
-        ppl_flower["username"] = "Grünes Kaninchen"
+        ppl_flower["username"] = bot8
         df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
-        eight_latest = df_sorted.head(2)
+        eight_latest = df_sorted.head(1)
     except Exception as e:
         print("An error occurred:", e)
 
     try:
         ppl_flower = pd.DataFrame(list(db.postlikes.find({"userId":nine[0]["_id"]})))
-        ppl_flower["username"] = "Grauer Otter"
+        ppl_flower["username"] = bot9
         df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
-        nine_latest = df_sorted.head(2)
+        nine_latest = df_sorted.head(1)
     except Exception as e:
         print("An error occurred:", e)
 
     try:
         ppl_flower = pd.DataFrame(list(db.postlikes.find({"userId":ten[0]["_id"]})))
-        ppl_flower["username"] = "Graue Krähe"
+        ppl_flower["username"] = bot10
         df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
-        ten_latest = df_sorted.head(2)
+        ten_latest = df_sorted.head(1)
     except Exception as e:
         print("An error occurred:", e)
 
     try:
         ppl_flower = pd.DataFrame(list(db.postlikes.find({"userId":ele[0]["_id"]})))
-        ppl_flower["username"] = "Gelber Roboter"
+        ppl_flower["username"] = bot11
         df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
-        ele_latest = df_sorted.head(2)
+        ele_latest = df_sorted.head(1)
     except Exception as e:
         print("An error occurred:", e)
 
     try:
         ppl_flower = pd.DataFrame(list(db.postlikes.find({"userId":twe[0]["_id"]})))
-        ppl_flower["username"] = "Blaues Siegel"
+        ppl_flower["username"] = bot12
         df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
-        twe_latest = df_sorted.head(2)
+        twe_latest = df_sorted.head(1)
     except Exception as e:
         print("An error occurred:", e)
         
     try:
         ppl_flower = pd.DataFrame(list(db.postlikes.find({"userId":thir[0]["_id"]})))
-        ppl_flower["username"] = "Blaues Huhn"
+        ppl_flower["username"] = bot13
         df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
-        thir_latest = df_sorted.head(2)
+        thir_latest = df_sorted.head(1)
     except Exception as e:
         print("An error occurred:", e)
 
     try:
         ppl_flower = pd.DataFrame(list(db.postlikes.find({"userId":fou[0]["_id"]})))
-        ppl_flower["username"] = "Blauer Ninja"
+        ppl_flower["username"] = bot14
         df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
-        fou_latest = df_sorted.head(2)
+        fou_latest = df_sorted.head(1)
     except Exception as e:
         print("An error occurred:", e)
 
     try:
         ppl_flower = pd.DataFrame(list(db.postlikes.find({"userId":fif[0]["_id"]})))
-        ppl_flower["username"] = "Blauer Biber"
+        ppl_flower["username"] = bot15
         df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
-        fif_latest = df_sorted.head(2)
+        fif_latest = df_sorted.head(1)
+    except Exception as e:
+        print("An error occurred:", e)
+        
+        
+        
+        
+    try:
+        ppl_flower = pd.DataFrame(list(db.postlikes.find({"userId":s16[0]["_id"]})))
+        ppl_flower["username"] = bot16
+        df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
+        s16_latest = df_sorted.head(1)
     except Exception as e:
         print("An error occurred:", e)
     
     try:
-        dfs = [one_latest, two_latest, three_latest, four_latest, five_latest, six_latest, seven_latest, eight_latest, nine_latest, ten_latest, ele_latest, twe_latest, thir_latest, fou_latest, fif_latest]
+        ppl_flower = pd.DataFrame(list(db.postlikes.find({"userId":s17[0]["_id"]})))
+        ppl_flower["username"] = bot17
+        df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
+        s17_latest = df_sorted.head(1)
+    except Exception as e:
+        print("An error occurred:", e)
+
+    try:
+        ppl_flower = pd.DataFrame(list(db.postlikes.find({"userId":s18[0]["_id"]})))
+        ppl_flower["username"] = bot18
+        df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
+        s18_latest = df_sorted.head(1)
+    except Exception as e:
+        print("An error occurred:", e)
+
+    try:
+        ppl_flower = pd.DataFrame(list(db.postlikes.find({"userId":s19[0]["_id"]})))
+        ppl_flower["username"] = bot19
+        df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
+        s19_latest = df_sorted.head(1)
+    except Exception as e:
+        print("An error occurred:", e)
+
+    try:
+        ppl_flower = pd.DataFrame(list(db.postlikes.find({"userId":s20[0]["_id"]})))
+        ppl_flower["username"] = bot20
+        df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
+        s20_latest = df_sorted.head(1)
+    except Exception as e:
+        print("An error occurred:", e)
+
+    try:
+        ppl_flower = pd.DataFrame(list(db.postlikes.find({"userId":s21[0]["_id"]})))
+        ppl_flower["username"] = bot21
+        df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
+        s21_latest = df_sorted.head(1)
+    except Exception as e:
+        print("An error occurred:", e)
+        
+    try:
+        ppl_flower = pd.DataFrame(list(db.postlikes.find({"userId":s22[0]["_id"]})))
+        ppl_flower["username"] = bot22
+        df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
+        s22_latest = df_sorted.head(1)
+    except Exception as e:
+        print("An error occurred:", e)
+
+    try:
+        ppl_flower = pd.DataFrame(list(db.postlikes.find({"userId":s23[0]["_id"]})))
+        ppl_flower["username"] = bot23
+        df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
+        s23_latest = df_sorted.head(1)
+    except Exception as e:
+        print("An error occurred:", e)
+
+    try:
+        ppl_flower = pd.DataFrame(list(db.postlikes.find({"userId":s24[0]["_id"]})))
+        ppl_flower["username"] = bot24
+        df_sorted = ppl_flower.sort_values(by='updatedAt', ascending=False)
+        s24_latest = df_sorted.head(1)
+    except Exception as e:
+        print("An error occurred:", e)
+    
+        
+    try:
+        dfs = [one_latest, two_latest, three_latest, four_latest, five_latest, six_latest, seven_latest, eight_latest, nine_latest, ten_latest, ele_latest, twe_latest, thir_latest, fou_latest, fif_latest, s16_latest, s17_latest, s18_latest, s19_latest, s20_latest, s21_latest, s22_latest, s23_latest, s24_latest]
         dfs_defined = [df for df in dfs if df is not None] 
 
         if dfs_defined:
@@ -1177,11 +1778,14 @@ def BotsTotalLikedPostsRoute():
             if len(concatenated_df) > 0:
                 print(concatenated_df.columns)
                 concatenated_df = concatenated_df.sort_values(by='updatedAt', ascending=False)
+                concatenated_df.set_index('updatedAt', inplace=True)
+                concatenated_df.index = concatenated_df.index.tz_localize(pytz.utc).tz_convert(eastern)
+                concatenated_df.reset_index(inplace=True)
         
                 latest_updates = concatenated_df.groupby('username').tail(5)
                 latest_updates['MD'] = latest_updates['updatedAt'].dt.strftime('%Y-%m-%dT%H:%M')
                 latest_updates = latest_updates.rename(columns={"MD":"Time"})
-                #latest_updates = latest_updates.head(15)
+                latest_updates = latest_updates.head(15)
                 fig = px.bar(latest_updates, x='Time', y='index', color='username', barmode='group', title='The most recent likes on posts')
                 graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
                 return graphJSON

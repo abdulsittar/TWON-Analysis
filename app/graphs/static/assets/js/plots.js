@@ -1,3 +1,33 @@
+function CaseStudyDone(){
+	$.ajax({
+		url: "/sensoranalysis/CaseStudyDoneRoute",
+		type: "GET",
+		contentType: 'application/json;charset=UTF-8',
+		data: {
+			'barrier': ""
+		},
+		dataType: "json",
+		success: function (data) {
+			Plotly.newPlot('done', data)
+		}
+	});
+};
+
+function TotalTimeCaseStudy(){
+	$.ajax({
+		url: "/sensoranalysis/TotalTimeCaseStudyRoute",
+		type: "GET",
+		contentType: 'application/json;charset=UTF-8',
+		data: {
+			'barrier': ""
+		},
+		dataType: "json",
+		success: function (data) {
+			Plotly.newPlot('total', data)
+		}
+	});
+};
+
 function BotsTotalLikedPosts(){
 	$.ajax({
 		url: "/sensoranalysis/BotsTotalLikedPostsRoute",
@@ -440,7 +470,7 @@ $('#trendsQA').on('click', 'button', function () {
 					board.style.width = document.getElementById('qawordcloud').style.width;
 					document.getElementById('qawordcloud').appendChild(board);
 					Plotly.newPlot(idstr, data[x])
-					document.getElementById(idstr).setAttribute('align', 'center');
+					document.getElementById(idstr).setAttribute('align', 'center'); 
 				}
 				$("#qawordcloud").children().each(function () {
 					$(this).css('text-align','center');
